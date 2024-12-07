@@ -114,9 +114,6 @@ class MouseController {
         var transformed = this.canvasMatrix.transformPoint(
             new DOMPoint(pos.x - this.canvasPos.x, pos.y - this.canvasPos.y)
         );
-        console.log("Pos: ", pos.x, pos.y);
-        console.log("CanvasPos: ", this.canvasPos.x, this.canvasPos.y);
-        console.log("Transformed: ", transformed.x, transformed.y);
         return new vec2(transformed.x, transformed.y);
     }
 

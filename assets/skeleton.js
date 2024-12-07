@@ -1,19 +1,33 @@
 const DEFAULTRAD = 10;
 const DEFAULTMINANGLE = 80 * Math.PI/180;
 
+class Animal{
+    /**
+     * Creates an animal from its skeleton and given colors
+     * @param {Joint} head - the head joint of the animal skeleton
+     * @param {string} fillColor - the color to fill the shape with in CSS format
+     * @param {string} strokeColor - the color to use for the stroke in CSS format
+     */
+    constructor(head, fillColor="white", strokeColor="black") {
+        this.head = head;
+        this.fillColor = fillColor;
+        this.strokeColor = strokeColor;
+    }
+}
+
 class Joint {
     /** @type {number} */
     /**
      * Construct a skeleton node.
      * @param {vec2} pos - the node position
      * @param {number} rad - the radius of the joint
-     * @param {Bone} bone - the bone pointing to the next node (null if this is a leaf)
-     * @param {number} minAngle - the minimum angle allowed between the bone before and after this joint
+     * @param {Bone} nextBone - the bone pointing to the next node (null if this is a leaf)
+     * @param {number} minAngle - the maximum angle between consecutive bones
      */
-    constructor(pos, rad = DEFAULTRAD, bone = null, minAngle = null) {
+    constructor(pos, rad = DEFAULTRAD, nextBone = null, minAngle = null) {
         this.pos = pos;
         this.rad = rad;
-        this.bone = bone;
+        this.nextBone = nextBone;
         this.minAngle = minAngle;
     }
 
@@ -24,8 +38,8 @@ class Joint {
      * @returns {Joint} the joint the bone points to
      */
     setNext(nextpos, radius = DEFAULTRAD) {
-        this.bone = new Bone(this.pos, nextpos, radius);
-        return this.bone.joint;
+        this.nextBone = new Bone(this.pos, nextpos, radius);
+        return this.nextBone.joint;
     }
 }
 

@@ -1,4 +1,4 @@
-class Animator{
+class Animator {
     /**
      * A procedural skeleton animator
      * @param {HTMLCanvasElement} canvas - the canvas on which we draw
@@ -14,8 +14,13 @@ class Animator{
         this.ctx.translate(this.width/2, this.height/2);
         this.ctx.scale(1, -1);
 
+        /** @type {Array<Animal>} */
+        this.animals = []
+
         // Create animal
-        this.head = Creator.Snake(100, this.width/150, this.width/50);
+        this.animals.push(
+            Creator.Snake(200, this.width/30, this.width/200, Math.PI/3)
+        );
 
         // Create head controllers
         //this.controller = FourierController.FromModeCoefficients(5, 1/5, 3, 1/6);//, 2, 1/7);
@@ -24,10 +29,11 @@ class Animator{
 
 
     /**
-     * Updates the position of the lead node based on input or behaviour.
+     * Updates the position of the given node based on input or behaviour.
+     * @param {Joint} joint - joint whose position needs updating
      */
-    updateHeadPosition(){
-        this.head.pos = this.controller.updatePosition(this.head.pos);
+    updateHeadPosition(joint){
+        joint.pos = this.controller.updatePosition(joint.pos);
     }
 
     /**
@@ -35,8 +41,8 @@ class Animator{
      * @param {Joint} fixedjoint - the lead joint of the skeleton
      * @param {vec2} previousJointPos - position of the previous joint
      */
-    adjustSkeleton(fixedjoint = this.head, previousJointPos= null){
-        var bone = fixedjoint.bone;
+    adjustSkeleton(fixedjoint, previousJointPos = null){
+        var bone = fixedjoint.nextBone;
         if (bone != null) {
             let joint = bone.joint;
             joint.pos = joint.pos.constrainLength(fixedjoint.pos, bone.length);
@@ -56,34 +62,75 @@ class Animator{
      * Performs a step in the animation.
      */
     step(){
-        this.updateHeadPosition();
-        this.adjustSkeleton();
+        this.animals.forEach(animal => {
+            console.log("Animal: ", animal);
+            this.updateHeadPosition(animal.head); // TODO: assign different behaviours to different animals
+            this.adjustSkeleton(animal.head);
+        });
+    }
+
+
+    /**
+     * Draws the given animal on the canvas
+     * @param {Animal} animal 
+     */
+    draw_animal(animal){
+        this.ctx.beginPath();
+        this.draw_skeleton(animal.head);
+        this.ctx.closePath();
+
+        this.ctx.fillStyle = animal.fillColor;
+        this.ctx.strokeStyle = animal.strokeColor;
+
+        this.ctx.fill();
+        this.ctx.stroke();
     }
 
     /**
      * Draw the given skeleton (by default, start w the head).
      * @param {Joint} joint - lead joint of skeleton
+     * @param {Joint} previousjoint - lead joint of skeleton
      */
-    draw(joint = this.head) {
+    draw_skeleton(joint, previousjoint = null) {
         if (joint == null) return;
         let pos = joint.pos
-        // draw joint
-        this.ctx.beginPath();
-        this.ctx.arc(pos.x, pos.y, joint.rad, 0, 2 * Math.PI);
-        this.ctx.fill();
-        if (joint.bone != null){
-            // draw bone
-            this.draw(joint.bone.joint);
+        let nextBone = joint.nextBone;
+
+        if (nextBone != null){
+            let next_pos = nextBone.joint.pos;
+            let node_dir_1 = pos.minus(next_pos).normalise();
+
+            if(previousjoint == null) {
+                var node_dir = node_dir_1;
+                let front_pos = pos.plus(node_dir.times(joint.rad));
+                this.ctx.moveTo(front_pos.x, front_pos.y);
+            } else {
+                let node_dir_2 = previousjoint.pos.minus(pos).normalise();
+                var node_dir = node_dir_1.plus(node_dir_2).normalise();
+            }
+            var node_left = pos.plus(node_dir.times(joint.rad).rotate(Math.PI/2));
+            var node_right = pos.plus(node_dir.times(joint.rad).rotate(-Math.PI/2));
+
+            this.ctx.lineTo(node_left.x, node_left.y);
+
+            // recurse
+            this.draw_skeleton(nextBone.joint, joint);
+
+            this.ctx.lineTo(node_right.x, node_right.y);
+        } else {
+            //this.ctx.lineTo(node_back.x, node_back.y);
         }
     }
-
+    
     /**
      * Animation procedure - requests the next animation frame
      */
     frame(){
         this.step();
         this.ctx.clearRect(-this.width/2, -this.height/2, this.width, this.height);
-        this.draw();
+        this.animals.forEach(animal => {
+           this.draw_animal(animal);
+        });
     }
 }
 
